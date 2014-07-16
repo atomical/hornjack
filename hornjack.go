@@ -6,20 +6,17 @@ import (
   "flag"
   "fmt"
   "bytes"
-  // "bufio"
   "io/ioutil"
   gq "github.com/PuerkitoBio/goquery"
-  // "net/url"
   "net/http"
   "runtime"
   "strings"
   "net/url"
   "path"
-
+  "github.com/jzelinskie/progress"
 )
 
 const (
-  BETA_EXPIRES_AT     = "Fri, 05 Sep 2014 15:04:05 MST"
   DEFAULT_USER_AGENT = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/35.0.1916.153 Safari/537.36"
 )
 
@@ -70,16 +67,24 @@ func main(){
   }
 
   var mediaObject []byte
+  pb := progress.New(os.Stdin, int64(len(urls)))
+  pb.Draw()
+  pb.DrawEvery(1 * time.Second)
+
   for i := range(urls) {
     mediaFile := fetchURL(urls[i])
     mediaObject = append(mediaObject, mediaFile...)
+    pb.Increment()
   }
+
+  fmt.Println("\n")
 
   if outputName == "" {
-    outputName = path.Base(urls[0])
-  }
+    parsedInputURL, _ := url.Parse(inputURL)
+    filename := strings.Split(path.Base(parsedInputURL.Path),":")[1] + ".ts"
+    outputName = filename
 
-  fmt.Println("Saving", outputName )
+  }
 
   ioutil.WriteFile(outputName, mediaObject, 0644)
 
@@ -87,28 +92,9 @@ func main(){
 
 func setup(){ 
 
-  betaProtect()
-
   // utilize all cores
   cpus := runtime.NumCPU()
   runtime.GOMAXPROCS( cpus )
-
-}
-
-func betaProtect() {
-  
-  // usage indicator
-  go func(){
-    resp, _ := http.Get("http://www.adamhallett.com/hornjack")
-    defer resp.Body.Close()
-  }()
-
-  // time limited
-  t, _ := time.Parse(time.RFC1123, BETA_EXPIRES_AT)
-  if time.Now().Unix() > t.Unix() {
-    fmt.Println("Expired Beta Version")
-    os.Exit(0)
-  }
 
 }
 
