@@ -9,7 +9,6 @@ import (
   "io/ioutil"
   gq "github.com/PuerkitoBio/goquery"
   "net/http"
-  "runtime"
   "strings"
   "net/url"
   "path"
@@ -24,14 +23,13 @@ var inputURL string
 var outputName string
 
 func main(){
-  setup()
   
-  flag.StringVar(&inputURL, "u", "", "url for an avalon asset" )
-  flag.StringVar(&outputName, "af", "", "filename for downloaded asset")
+  flag.StringVar(&inputURL, "u", "http://", "url for an avalon asset" )
+  flag.StringVar(&outputName, "af", "video.ts", "filename for downloaded asset")
 
   flag.Parse()
 
-  if (inputURL == "") {
+  if (inputURL == "http://") {
     flag.PrintDefaults()
     return
   }
@@ -43,8 +41,7 @@ func main(){
   doc, err := gq.NewDocumentFromReader(buf)
 
   if err != nil {
-    fmt.Println(err)
-    return
+    panic(err)
   }
   
   tag := doc.Find("source[data-quality='high'][data-plugin-type='native']").First()
@@ -90,31 +87,21 @@ func main(){
 
 }
 
-func setup(){ 
-
-  // utilize all cores
-  cpus := runtime.NumCPU()
-  runtime.GOMAXPROCS( cpus )
-
-}
-
 func fetchURL( url string ) ( []byte ) {
 
-
-client := &http.Client{}
+  client := &http.Client{}
 
   req, err := http.NewRequest("GET", url, nil)
+
   if err != nil {
-    fmt.Println(err)
-    return nil
+    panic(err)
   }
 
   req.Header.Set("User-Agent", DEFAULT_USER_AGENT)
 
   resp, err := client.Do(req)
   if err != nil {
-    fmt.Println(err)
-    return nil
+    panic(err)
   }
 
   defer resp.Body.Close()
@@ -122,8 +109,7 @@ client := &http.Client{}
   body, err := ioutil.ReadAll(resp.Body)
   
   if err != nil {
-    fmt.Println(err)
-    return nil
+    panic(err)
   }
 
   return body 
